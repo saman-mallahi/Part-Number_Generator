@@ -1,0 +1,1489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Part No. Generator</title>
+<style>
+:root{--bg:#eef1f5;--panel:#fff;--line:#aeb7c3;--blue:#1f4e78;--blue2:#dbeaf7;--green:#176b45;--red:#a52a2a;--muted:#66717f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:"Segoe UI",Arial,sans-serif;color:#17202a}
+.app{max-width:1500px;margin:22px auto;padding:0 18px}
+.app-footer{
+  position:fixed;right:18px;bottom:14px;z-index:100;
+  font-size:11.5px;color:var(--muted);
+  background:rgba(255,255,255,0.92);border:1px solid #d7dee6;
+  border-radius:14px;padding:5px 12px;box-shadow:0 2px 6px #0001;
+  user-select:none;pointer-events:none;letter-spacing:.2px;
+}
+.app-footer b{color:var(--blue);font-weight:700}
+.app-footer .ver{
+  display:inline-block;margin-left:8px;padding:1px 7px;border-radius:9px;
+  background:#eef2f7;border:1px solid #d7dee6;color:#475569;
+  font-family:Consolas,monospace;font-size:10.5px;font-weight:700;
+}
+h1{font-size:24px;margin:0 0 4px} .subtitle{color:var(--muted);margin-bottom:16px;font-size:13px;max-width:1100px}
+.header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.tabs{display:flex;gap:6px} .tab{border:1px solid var(--line);background:#e4e9ef;padding:9px 17px;border-radius:6px 6px 0 0;cursor:pointer;font-weight:700}
+.tab.active{background:#fff;border-bottom-color:#fff;color:var(--blue)}
+.page{background:#fff;border:1px solid var(--line);border-radius:0 8px 8px 8px;padding:22px;box-shadow:0 2px 8px #0001}
+.sheet{display:none} .sheet.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-items:end}
+.field{grid-column:span 2} .wide{grid-column:span 3} .project-row{grid-column:span 4}
+.project-box{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:7px}
+label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:5px}
+input,select{width:100%;height:39px;border:1px solid #8d99a6;border-radius:4px;padding:7px 9px;background:#fff;font-size:14px}
+input:focus,select:focus{outline:2px solid #8db7d9;border-color:#4d86b5}
+input.code4{font-family:Consolas,monospace;letter-spacing:1px}
+.section-title{font-size:13px;font-weight:800;color:#34495e;margin:0 0 8px}
+.checks{grid-column:span 2;display:flex;gap:15px;align-items:center;height:39px}
+.check{display:flex;align-items:center;gap:6px;font-size:13px}
+.check input{width:17px;height:17px}
+.check.disabled{opacity:.45;pointer-events:none;color:#94a3b8}
+select:disabled{background:#f1f4f7;color:#94a3b8;border-color:#c5cdd6;cursor:not-allowed}
+.output-area{margin-top:22px;border-top:2px solid #d7dde4;padding-top:16px}
+.outputs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.output{border:1px solid #7d8996;border-radius:6px;background:#f7f9fb;padding:11px}
+.caption{font-size:12px;font-weight:800;color:#475569;margin-bottom:6px}
+
+/* ---------- Value box with copy icon ---------- */
+.value{
+  position:relative;
+  min-height:45px;
+  display:flex;
+  align-items:center;
+  font-family:Consolas,monospace;
+  font-size:20px;
+  font-weight:700;
+  color:var(--green);
+  word-break:break-all;
+  background:#fff;
+  border:1px solid #d0d7df;
+  border-radius:4px;
+  padding:8px 46px 8px 8px;
+  cursor:pointer;
+  user-select:text;
+  transition:border-color .12s,background .12s
+}
+.value:hover{border-color:#b9c4d1;background:#fbfdfe}
+.value.has-value:active{background:#f2f6fa}
+.value .copy-ico{
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  width:28px;
+  height:28px;
+  border:none;
+  border-radius:5px;
+  background:transparent;
+  color:#8d99a6;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  transition:background .12s,color .12s
+}
+.value .copy-ico:hover{background:#eef2f7;color:#1f4e78}
+.value .copy-ico:active{background:#dbeaf7}
+.value .copy-ico:disabled{opacity:.35;cursor:not-allowed}
+.value .copy-ico.copied{color:#16a34a;background:#f0fdf4}
+.value .copy-ico svg{width:16px;height:16px;display:block}
+
+.status{font-size:12px;color:#66717f;margin-top:8px} .invalid{color:var(--red)}
+.editor-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px}
+.editor-title{min-width:280px} .editor-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+button.action{border:1px solid #9ba7b4;background:#f5f7f9;padding:8px 13px;border-radius:5px;cursor:pointer;font-weight:700}
+button.action.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+button.action.danger{color:#9b2020}
+button.action:disabled{opacity:.45;cursor:not-allowed}
+.editor-status{font-size:12px;color:#687482;margin-top:8px}
+.table-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
+.table-tab{border:1px solid #b6c0cb;background:#f4f6f8;padding:7px 11px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700}
+.table-tab.active{background:var(--blue2);border-color:#6c9bc1;color:#163e5c}
+.badge{display:inline-block;padding:2px 6px;border-radius:10px;background:#edf1f5;font-size:10px;margin-left:5px}
+.mode-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:800;margin-left:8px;letter-spacing:.3px}
+.mode-badge.user{background:#dcfce7;color:#166534;border:1px solid #86efac}
+.mode-badge.admin{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.note{font-size:12px;color:#66717f;margin:0 0 10px}
+.offline-banner{
+  display:none;margin:0 0 14px;padding:10px 14px;border-radius:6px;
+  background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;
+  font-size:12.5px;line-height:1.5
+}
+.offline-banner b{color:#7f1d1d}
+
+/* ---------- Filter combobox ---------- */
+.cb{position:relative}
+.cb input{
+  width:100%;height:39px;border:1px solid #8d99a6;border-radius:4px;
+  padding:7px 56px 7px 9px;background:#fff;font-size:14px;
+  box-sizing:border-box;cursor:text
+}
+.cb input:focus{outline:2px solid #8db7d9;border-color:#4d86b5}
+.cb .btn-clear{
+  position:absolute;right:26px;top:50%;transform:translateY(-50%);
+  width:18px;height:18px;border-radius:50%;border:none;
+  background:#e2e8ef;color:#475569;font-size:12px;line-height:1;
+  cursor:pointer;display:none;align-items:center;justify-content:center;
+  padding:0
+}
+.cb .btn-clear:hover{background:#cbd5e1;color:#17202a}
+.cb.has-value .btn-clear{display:flex}
+.cb .caret{
+  position:absolute;right:9px;top:50%;transform:translateY(-50%);
+  pointer-events:none;color:#8d99a6;font-size:11px
+}
+.cb .list{
+  position:absolute;left:0;right:0;top:100%;margin-top:2px;
+  background:#fff;border:1px solid #8d99a6;border-radius:4px;
+  max-height:260px;overflow-y:auto;z-index:50;
+  box-shadow:0 6px 18px #0002;display:none
+}
+.cb .list.open{display:block}
+.cb .opt{
+  padding:7px 10px;font-size:13.5px;cursor:pointer;
+  border-bottom:1px solid #eef1f5
+}
+.cb .opt:last-child{border-bottom:none}
+.cb .opt:hover,.cb .opt.hi{background:#dbeaf7}
+.cb .opt mark{background:#fef3c7;color:inherit;font-weight:700;padding:0 1px;border-radius:2px}
+.cb .empty{padding:8px 10px;color:#94a3b8;font-size:12.5px;font-style:italic}
+
+.cb.disabled input{
+  background:#f1f4f7;color:#94a3b8;border-color:#c5cdd6;
+  cursor:not-allowed
+}
+.cb.disabled input:focus{outline:none;border-color:#c5cdd6}
+.cb.disabled .caret{color:#c5cdd6}
+.cb.disabled .btn-clear{display:none !important}
+
+/* Reference tables */
+.table-wrap{overflow:auto;max-height:700px;border:1px solid #bcc6d1;border-radius:4px;background:#fff}
+.data-table{border-collapse:collapse;table-layout:fixed;width:max-content;font-size:11.5px}
+.data-table th,.data-table td{border:1px solid #d6dde4;padding:4px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;line-height:1.3}
+.data-table th{background:#e9edf2;position:sticky;top:0;z-index:2;text-align:left;font-weight:700;font-size:11px;color:#334155;letter-spacing:.2px}
+.data-table td.editable{height:26px}
+.data-table.editing td.editable{background:#fffdf0;cursor:text;outline:none}
+.data-table.editing td.editable:focus{box-shadow:inset 0 0 0 2px #6c9bc1;background:#fff;white-space:normal;overflow:visible}
+.data-table .row-select{width:15px;height:15px;display:block;margin:0 auto}
+.data-table th:first-child,.data-table td:first-child{position:sticky;left:0;background:#f1f4f7;z-index:3;text-align:center;width:34px}
+.data-table.parts th:nth-child(n+2),.data-table.parts td:nth-child(n+2){width:100px}
+.data-table.parts th:last-child,.data-table.parts td:last-child{width:50px}
+.data-table.valves th:nth-child(2),.data-table.valves td:nth-child(2){width:280px;white-space:normal}
+.data-table.valves th:nth-child(3),.data-table.valves td:nth-child(3){width:110px}
+.data-table.valves th:nth-child(4),.data-table.valves td:nth-child(4){width:70px}
+.data-table.materials th:nth-child(2),.data-table.materials td:nth-child(2){width:70px}
+.data-table.materials th:nth-child(3),.data-table.materials td:nth-child(3){width:130px;white-space:normal}
+.data-table.materials th:nth-child(4),.data-table.materials td:nth-child(4){width:160px;white-space:normal}
+.data-table.materials th:nth-child(5),.data-table.materials td:nth-child(5){width:58px}
+.data-table.materials th:nth-child(6),.data-table.materials td:nth-child(6){width:80px}
+.data-table.classes th:nth-child(2),.data-table.classes td:nth-child(2),
+.data-table.sizes th:nth-child(2),.data-table.sizes td:nth-child(2){width:200px}
+.data-table.classes th:nth-child(3),.data-table.classes td:nth-child(3),
+.data-table.sizes th:nth-child(3),.data-table.sizes td:nth-child(3){width:90px}
+.data-table.treatments th:nth-child(2),.data-table.treatments td:nth-child(2){width:200px}
+.data-table.treatments th:nth-child(3),.data-table.treatments td:nth-child(3){width:80px}
+
+.pw-overlay{position:fixed;inset:0;background:#0006;display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.pw-overlay[hidden]{display:none}
+.pw-dialog{background:#fff;border-radius:10px;padding:22px;min-width:360px;max-width:440px;box-shadow:0 12px 40px #0004}
+.pw-dialog h3{margin:0 0 6px;font-size:16px;color:#17202a}
+.pw-dialog p{margin:0 0 14px;font-size:13px;color:#66717f}
+.pw-field{margin-bottom:12px}
+.pw-field label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:4px}
+.pw-field input{width:100%;height:39px;border:1px solid #8d99a6;border-radius:4px;padding:7px 9px;font-size:14px}
+.pw-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.pw-msg{font-size:12px;margin-top:8px}
+.pw-msg.error{color:#a52a2a}
+.pw-msg.ok{color:#166534}
+.pw-msg[hidden]{display:none}
+.help-dialog{background:#fff;border-radius:10px;box-shadow:0 12px 40px #0004;width:100%;max-width:860px;max-height:88vh;display:flex;flex-direction:column}
+.help-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid #e2e8ef}
+.help-head h3{margin:0;font-size:18px;color:var(--blue)}
+.help-nav{display:flex;gap:4px;flex-wrap:wrap;padding:10px 22px;border-bottom:1px solid #e2e8ef;background:#f8fafc}
+.help-nav a{font-size:11.5px;color:var(--blue);text-decoration:none;border:1px solid #d7dee6;background:#fff;padding:3px 8px;border-radius:12px;font-weight:600}
+.help-nav a:hover{background:var(--blue2);border-color:#6c9bc1}
+.help-body{padding:18px 22px;overflow-y:auto;font-size:13.5px;line-height:1.65;color:#2c3e50}
+.help-body h4{margin:22px 0 6px;font-size:14px;color:var(--blue);border-bottom:1px solid #e2e8ef;padding-bottom:4px;scroll-margin-top:8px}
+.help-body h4:first-child{margin-top:0}
+.help-body h5{margin:14px 0 4px;font-size:13px;color:#334155}
+.help-body p{margin:6px 0}
+.help-body ul,.help-body ol{margin:6px 0;padding-left:22px}
+.help-body li{margin:3px 0}
+.help-body code{background:#eef2f7;border:1px solid #d7dee6;border-radius:3px;padding:1px 6px;font-family:Consolas,monospace;font-size:12px;color:#1f4e78;word-break:break-word}
+.help-body pre{background:#111827;color:#e5e7eb;border-radius:6px;padding:10px 12px;overflow-x:auto;font-size:12px;line-height:1.55;margin:8px 0}
+.help-body kbd{background:#fff;border:1px solid #b6c0cb;border-bottom-width:2px;border-radius:4px;padding:1px 6px;font-family:Consolas,monospace;font-size:11.5px}
+.help-body .tip{background:#eff6ff;border-left:3px solid #3b82f6;padding:8px 12px;border-radius:4px;margin:10px 0;font-size:12.5px}
+.help-body .warn{background:#fef2f2;border-left:3px solid #dc2626;padding:8px 12px;border-radius:4px;margin:10px 0;font-size:12.5px}
+.help-body .ok{background:#f0fdf4;border-left:3px solid #16a34a;padding:8px 12px;border-radius:4px;margin:10px 0;font-size:12.5px}
+.help-body table{border-collapse:collapse;margin:8px 0;font-size:12.5px;width:100%}
+.help-body th,.help-body td{border:1px solid #d7dee6;padding:5px 8px;text-align:left;vertical-align:top}
+.help-body th{background:#f1f5f9;font-weight:700}
+.help-foot{padding:12px 22px;border-top:1px solid #e2e8ef;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.help-foot .hint{font-size:11.5px;color:#94a3b8}
+@media(max-width:1000px){.field,.wide,.project-row,.checks{grid-column:span 6}.outputs{grid-template-columns:1fr}.editor-top{flex-direction:column}.editor-actions{justify-content:flex-start}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header-row">
+  <div>
+    <h1>Part No. Generator</h1>
+    <div class="subtitle">Server-backed reference data (SQLite). Edits made by an administrator are saved on the server and shared with every user.</div>
+  </div>
+  <button id="helpBtn" class="action primary" type="button" title="Open help">? Help</button>
+</div>
+
+<div class="offline-banner" id="offlineBanner">
+  <b>Server not reachable.</b>
+  This page is open without a running backend, so no data can be loaded.
+  This is normal if you're just inspecting the HTML — but the dropdowns and tables will stay empty.
+  To use the app properly, double-click <code>start.bat</code> on the server machine and reload this page.
+</div>
+
+<div class="tabs">
+<button class="tab active" data-tab="generator">Generator</button>
+<button class="tab" data-tab="tables">Reference Tables</button>
+</div>
+
+<section id="generator" class="sheet active page">
+<div class="grid">
+<div class="project-row">
+<div class="section-title">Project NO.</div>
+<div class="project-box">
+  <div>
+    <label>Year</label>
+    <div class="cb" id="year_cb">
+      <input id="year" type="text" autocomplete="off" placeholder="Type or scroll…">
+      <button class="btn-clear" type="button" title="Clear selection">✕</button>
+      <span class="caret">▾</span>
+      <div class="list"></div>
+    </div>
+  </div>
+  <div>
+    <label>Project Type</label>
+    <div class="cb" id="ptype_cb">
+      <input id="ptype" type="text" autocomplete="off" placeholder="Type or scroll…">
+      <button class="btn-clear" type="button" title="Clear selection">✕</button>
+      <span class="caret">▾</span>
+      <div class="list"></div>
+    </div>
+  </div>
+  <div>
+    <label>Project Code</label>
+    <input id="projectCode" class="code4" type="text" inputmode="numeric" maxlength="4" placeholder="3–4 digits">
+  </div>
+</div>
+</div>
+
+<div class="field"><label>Item NO.</label><input id="itemNo" class="code4" type="text" inputmode="numeric" maxlength="4" placeholder="1–4 digits"></div>
+
+<div class="field wide">
+  <label>Valve Type</label>
+  <div class="cb" id="valve_cb">
+    <input id="valve" type="text" autocomplete="off" placeholder="Type or scroll…">
+    <button class="btn-clear" type="button" title="Clear selection">✕</button>
+    <span class="caret">▾</span>
+    <div class="list"></div>
+  </div>
+</div>
+
+<div class="field wide">
+  <label>Part Name</label>
+  <div class="cb" id="part_cb">
+    <input id="part" type="text" autocomplete="off" placeholder="Type or scroll…">
+    <button class="btn-clear" type="button" title="Clear selection">✕</button>
+    <span class="caret">▾</span>
+    <div class="list"></div>
+  </div>
+</div>
+
+<div class="field wide">
+  <label id="materialLabel">Material</label>
+  <div class="cb" id="material_cb">
+    <input id="material" type="text" autocomplete="off" placeholder="Type or scroll…">
+    <button class="btn-clear" type="button" title="Clear selection">✕</button>
+    <span class="caret">▾</span>
+    <div class="list"></div>
+  </div>
+</div>
+
+<div class="field">
+  <label>Class</label>
+  <div class="cb" id="cls_cb">
+    <input id="cls" type="text" autocomplete="off" placeholder="Type or scroll…">
+    <button class="btn-clear" type="button" title="Clear selection">✕</button>
+    <span class="caret">▾</span>
+    <div class="list"></div>
+  </div>
+</div>
+
+<div class="field">
+  <label>Size</label>
+  <div class="cb" id="size_cb">
+    <input id="size" type="text" autocomplete="off" placeholder="Type or scroll…">
+    <button class="btn-clear" type="button" title="Clear selection">✕</button>
+    <span class="caret">▾</span>
+    <div class="list"></div>
+  </div>
+</div>
+
+<div class="field" id="optionField">
+  <label id="optionLabel">Option</label>
+  <select id="option"></select>
+</div>
+<div class="checks">
+<label class="check" id="naceLbl"><input type="checkbox" id="nace"> NACE</label>
+<label class="check" id="normLbl"><input type="checkbox" id="norm"> Norm.</label>
+</div>
+</div>
+
+<div class="output-area">
+<div class="outputs">
+  <div class="output">
+    <div class="caption">Part No.</div>
+    <div class="value" id="partNo" title="Click to copy">
+      <span class="txt">—</span>
+      <button class="copy-ico" id="copyPartNo" type="button" title="Copy to clipboard" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div class="output">
+    <div class="caption">Drawing NO.</div>
+    <div class="value" id="drawingNo" title="Click to copy">
+      <span class="txt">—</span>
+      <button class="copy-ico" id="copyDrawingNo" type="button" title="Copy to clipboard" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="status" id="status">Enter the required values.</div>
+</div>
+</section>
+
+<section id="tables" class="sheet page">
+<div class="editor-top">
+<div class="editor-title">
+<div class="section-title">Reference Tables <span id="rowCount" class="badge"></span><span id="modeBadge" class="mode-badge user">User Mode</span></div>
+<div class="note">Read-only. Click <b>Edit</b> and enter the admin password to modify. <b>Save</b> writes changes to the server. See Help for how to back up or reset the database.</div>
+</div>
+<div class="editor-actions">
+<button id="editBtn" class="action primary">Edit</button>
+<button id="addBtn" class="action" disabled>Add Row</button>
+<button id="upBtn" class="action" disabled>Move Up</button>
+<button id="downBtn" class="action" disabled>Move Down</button>
+<button id="deleteBtn" class="action danger" disabled>Delete Selected</button>
+<button id="saveBtn" class="action primary" disabled>Save</button>
+<button id="changePwBtn" class="action" hidden>Change Password</button>
+<button id="lockBtn" class="action" hidden>Lock</button>
+</div>
+</div>
+<div id="tableTabs" class="table-tabs"></div>
+<div id="tableContent"></div>
+<div id="editorStatus" class="editor-status">Loading…</div>
+</section>
+</div>
+
+<div class="app-footer" id="appFooter">
+  Developed by <b>PSM Engineering Department</b>
+  <span class="ver" id="appVersion">v1.0.0</span>
+</div>
+
+<div id="pwOverlay" class="pw-overlay" hidden>
+  <div class="pw-dialog">
+    <h3>Admin access required</h3>
+    <p>Enter the admin password to unlock editing of the reference tables.</p>
+    <div class="pw-field">
+      <label for="pwInput">Password</label>
+      <input id="pwInput" type="password" placeholder="Password" autocomplete="off">
+    </div>
+    <div id="pwError" class="pw-msg error" hidden>Incorrect password. Try again.</div>
+    <div class="pw-actions">
+      <button id="pwCancel" class="action" type="button">Cancel</button>
+      <button id="pwOk" class="action primary" type="button">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<div id="cpOverlay" class="pw-overlay" hidden>
+  <div class="pw-dialog">
+    <h3>Change admin password</h3>
+    <p>The password is stored on the server and applies immediately. Minimum 4 characters.</p>
+    <div class="pw-field">
+      <label for="cpCurrent">Current password</label>
+      <input id="cpCurrent" type="password" autocomplete="off">
+    </div>
+    <div class="pw-field">
+      <label for="cpNew">New password</label>
+      <input id="cpNew" type="password" autocomplete="off">
+    </div>
+    <div class="pw-field">
+      <label for="cpConfirm">Confirm new password</label>
+      <input id="cpConfirm" type="password" autocomplete="off">
+    </div>
+    <div id="cpMsg" class="pw-msg" hidden></div>
+    <div class="pw-actions">
+      <button id="cpCancel" class="action" type="button">Cancel</button>
+      <button id="cpOk" class="action primary" type="button">Save new password</button>
+    </div>
+  </div>
+</div>
+
+<div id="helpOverlay" class="pw-overlay" hidden>
+  <div class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="help-head">
+      <h3 id="helpTitle">Help &amp; Documentation</h3>
+      <button id="helpCloseX" class="action" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="help-nav">
+      <a href="#h1">1. Overview</a>
+      <a href="#h2">2. Generator</a>
+      <a href="#h3">3. Tables</a>
+      <a href="#h4">4. Admin Mode</a>
+      <a href="#h5">5. Change Password</a>
+      <a href="#h6">6. Setup menu</a>
+      <a href="#h7">7. Start &amp; Stop</a>
+      <a href="#h8">8. Address</a>
+      <a href="#h9">9. Security</a>
+      <a href="#h10">10. Backup</a>
+      <a href="#h11">11. Forgot Password</a>
+      <a href="#h12">12. Direct DB</a>
+      <a href="#h13">13. Troubleshooting</a>
+      <a href="#h14">14. Shortcuts</a>
+    </div>
+    <div class="help-body">
+
+      <h4 id="h1">1. What this app does</h4>
+      <p>The <b>Part No. Generator</b> builds two identifiers for engineered valves and actuators:</p>
+      <ul>
+        <li><b>Part No.</b> — a compact code that identifies a specific component (e.g. a Body, Bonnet, or Seat) of a given valve type, material, pressure class, and size.</li>
+        <li><b>Drawing NO.</b> — a project-scoped identifier that ties a part to a year, project type, project code, and item number.</li>
+      </ul>
+      <p>All reference data lives in a SQLite database (<code>data.sqlite</code>) on the server. When an administrator edits it and clicks Save, the change is written to that database and is instantly visible to every user the next time they load the page.</p>
+
+      <h4 id="h2">2. Using the Generator</h4>
+      <ol>
+        <li><b>Project NO.</b> — pick a <i>Year</i>, a <i>Project Type</i>, and type a <i>Project Code</i> of 3–4 digits.</li>
+        <li><b>Item NO.</b> — type 1–4 digits.</li>
+        <li><b>Valve Type</b> — start typing to filter. Pick an entry from the list.</li>
+        <li><b>Part Name</b> — type to filter. The list contains only parts of the chosen valve.</li>
+        <li><b>Material</b> — type to filter (e.g. <code>182</code> shows all A182 specs). Pick an entry.</li>
+        <li><b>Class</b> and <b>Size</b> — type to filter, then pick.</li>
+        <li><b>Option</b> — dropdown for the special treatment suffix.</li>
+      </ol>
+      <div class="tip"><b>Mouse wheel.</b> All seven filter fields — Year, Project Type, Valve Type, Part Name, Material, Class, Size — respond to the mouse wheel the same way. Hover over the field (dropdown closed) and roll the wheel. The selection cycles through the entries without opening the dropdown. The new entry is committed immediately — no click needed. When the dropdown <i>is</i> open (because you clicked into the field or started typing), the wheel scrolls the list instead.</div>
+      <div class="tip"><b>Filtering fields.</b> The five type-to-filter fields (Valve Type, Part Name, Material, Class, Size) plus Year and Project Type let you type to filter the list. <b>What you type is only a filter — it never becomes the value.</b> A value is only accepted if it was picked from the dropdown (clicked) or reached via the mouse wheel. Leaving a field with unrecognised text reverts it to the previous selection.
+        <ul style="margin:6px 0 0">
+          <li>Click into a field → the current entry stays visible, so you can delete or edit it.</li>
+          <li>Delete everything and click away → the field stays empty.</li>
+          <li>Type something that doesn't match, click away → the field reverts to the previous entry (or stays empty if there was none).</li>
+          <li>Click the <b>✕</b> to clear a value instantly. The ✕ is present on all seven filter fields, including Year and Project Type.</li>
+        </ul>
+      </div>
+      <div class="tip"><b>Assembly parts.</b> When the selected <b>Part Name</b> is exactly <code>Assembly</code>, four things are disabled and greyed out at once: the <b>Material</b> field, the <b>Option</b> dropdown, the <b>NACE</b> checkbox, and the <b>Norm.</b> checkbox. All four corresponding codes are omitted from the Part No. For example, instead of <code>31-00-021N-A2-N2-T</code> an assembly produces <code>31-00-A2-N2</code>. All four controls return to normal (with empty values) when you pick a different Part Name. The <b>Drawing NO.</b> is unaffected — it uses only Year, Project Type, Project Code, Item NO., and Part Code.</div>
+      <div class="tip"><b>Copying the result.</b> Each output box — <b>Part No.</b> and <b>Drawing NO.</b> — has a small copy icon at its right edge. Click <i>anywhere</i> in the box (or the icon itself) to copy the value to the clipboard. The icon briefly turns green to confirm. Both boxes are dimmed and unclickable while the output shows a dash (<code>—</code>) — they activate as soon as a full code has been assembled.</div>
+
+      <h4 id="h3">3. Reference Tables</h4>
+      <p>Click the <b>Reference Tables</b> tab to see the data behind the drop-downs. Six tables: Part List, Valve Types, Material, Class, Size, Special Treatment. In <b>User Mode</b> (green badge) they are read-only. Unlock <b>Admin Mode</b> to edit them.</p>
+
+      <h4 id="h4">4. Admin Mode</h4>
+      <ol>
+        <li>Open the <b>Reference Tables</b> tab.</li>
+        <li>Click <b>Edit</b>. A password prompt appears.</li>
+        <li>Enter the admin password. The default is <code>admin123</code>.</li>
+        <li>The badge switches to <span class="mode-badge admin" style="margin:0">Admin Mode</span>, and two extra buttons appear: <b>Change Password</b> and <b>Lock</b>.</li>
+      </ol>
+      <p>While unlocked you can edit cells directly, add or remove rows, reorder them with <b>Move Up</b> / <b>Move Down</b>, and click <b>Save</b> to write everything back to the SQLite database.</p>
+
+      <h4 id="h5">5. Changing the admin password</h4>
+      <p>Unlock Admin Mode, then click <b>Change Password</b>. Enter the current password, the new password twice, and save. Requirements: current password must be correct, new password must be at least 4 characters, and the two new-password fields must match. The new password is stored in <code>data.sqlite</code> and applies immediately.</p>
+
+      <h4 id="h6">6. Installation &amp; the setup menu</h4>
+      <p>The app consists of these files, all in the same folder:</p>
+      <table>
+        <tr><th>File</th><th>Purpose</th></tr>
+        <tr><td><code>setup.bat</code></td><td><b>Run once, as Administrator.</b> Configure the app, repair the database, or capture the current DB as the new defaults.</td></tr>
+        <tr><td><code>start.bat</code></td><td>Start the server. Run this every time you want the app online.</td></tr>
+        <tr><td><code>server.py</code></td><td>The Python backend.</td></tr>
+        <tr><td><code>seed_data.py</code></td><td><b>All built-in reference data lives here.</b> Nothing is hardcoded in the HTML.</td></tr>
+        <tr><td><code>seed_tools.py</code></td><td>Helper used by setup option 3 to export the DB back into <code>seed_data.py</code>.</td></tr>
+        <tr><td><code>part_no_generator_html_v1.html</code></td><td>The user interface (this page).</td></tr>
+        <tr><td><code>data.sqlite</code></td><td>The database. Auto-built from <code>seed_data.py</code> on first start if missing.</td></tr>
+        <tr><td><code>config.txt</code></td><td>Created by <code>setup.bat</code>. Holds hostname, port, and bind address.</td></tr>
+      </table>
+
+      <h5>Python is required</h5>
+      <p>If Python isn't already installed, download Python 3 from <code>https://www.python.org/downloads/</code> and <b>tick "Add Python to PATH"</b> during installation. No third-party packages are needed.</p>
+
+      <h5>Running setup.bat</h5>
+      <p>Right-click <code>setup.bat</code> and choose <b>Run as administrator</b>. It presents three options:</p>
+      <table>
+        <tr><th>Option</th><th>What it does</th></tr>
+        <tr><td><b>1 — Initial setup</b></td><td>Asks for the address, port style, and LAN access. Writes <code>config.txt</code>, builds <code>data.sqlite</code> if missing, adds the hosts entry, sets up port forwarding and firewall rules. Safe to re-run — never overwrites an existing <code>data.sqlite</code>.</td></tr>
+        <tr><td><b>2 — Repair / Reset database</b></td><td>Deletes <code>data.sqlite</code> and rebuilds it fresh from <code>seed_data.py</code>. <b>All current data is lost.</b> Requires typing <b>YES</b> to confirm.</td></tr>
+        <tr><td><b>3 — Update seed_data.py</b></td><td>Reads the current <code>data.sqlite</code> and overwrites <code>seed_data.py</code> with its contents. This captures whatever you have in the app as the new built-in defaults. Requires typing <b>YES</b> to confirm.</td></tr>
+      </table>
+      <div class="ok"><b>Recommended workflow.</b> First deployment: option 1. Later, to freeze your current data as the fallback defaults: option 3. If the DB gets corrupted: option 2 and it rebuilds from the last captured <code>seed_data.py</code>.</div>
+
+      <h4 id="h7">7. Starting and stopping the server</h4>
+      <ol>
+        <li>Double-click <code>start.bat</code>. If the DB is missing, it's built automatically from <code>seed_data.py</code>.</li>
+        <li>A black console window opens. When it says <i>"Part No. Generator starting..."</i> and lists the URL, the server is up. <b>Leave this window open</b> while the app is in use.</li>
+        <li>Open a browser to the URL shown.</li>
+      </ol>
+      <p><b>To stop:</b> close the console window, or press <kbd>Ctrl</kbd>+<kbd>C</kbd> inside it.</p>
+      <div class="tip"><b>Daily use:</b> pin a shortcut to <code>start.bat</code> on the taskbar. The console window must stay open.</div>
+
+      <h5>Multiple users</h5>
+      <p>Several people can use the app at the same time. Each browser gets its own session. Only the person who unlocks Admin Mode can modify tables. If two admins click Save at the same moment, the second save replaces the first — have a single designated admin at a time.</p>
+
+      <h4 id="h8">8. The address and the hosts file</h4>
+      <p>The address you chose (default: <code>part-generator.eng</code>) works because <code>setup.bat</code> added a line to this computer's <b>hosts</b> file. Verify with <code>ping part-generator.eng</code> — you should see <code>127.0.0.1</code>. If it fails, re-run <code>setup.bat</code> option 1 or add the line by hand in <code>C:\Windows\System32\drivers\etc\hosts</code>:</p>
+      <pre>127.0.0.1    part-generator.eng</pre>
+      <p>Then run <code>ipconfig /flushdns</code>. <b>hosts is per-machine.</b></p>
+
+      <h4 id="h9">9. Security</h4>
+      <table>
+        <tr><th>Measure</th><th>What it protects against</th></tr>
+        <tr><td>Reads are public; writes require login</td><td>Anyone can view tables. Only an unlocked admin can change them.</td></tr>
+        <tr><td>Session token</td><td>After unlocking, every write call carries a random 32-byte token. Stale tokens expire after 4 hours.</td></tr>
+        <tr><td>Constant-time password comparison</td><td>Prevents timing attacks.</td></tr>
+        <tr><td>Request size cap (2 MB)</td><td>Prevents memory exhaustion.</td></tr>
+        <tr><td>Only one HTML file can be served</td><td>No directory traversal, no exposure of <code>data.sqlite</code> or <code>server.py</code>.</td></tr>
+        <tr><td>CSP, X-Frame-Options, Referrer-Policy</td><td>Prevents clickjacking and script injection.</td></tr>
+        <tr><td>Atomic database writes</td><td>A crash mid-save leaves <code>data.sqlite</code> in its previous good state.</td></tr>
+      </table>
+      <div class="warn"><b>LAN mode is meant for trusted internal networks only.</b> Do not expose this server to the public internet.</div>
+
+      <h4 id="h10">10. Backup &amp; restore</h4>
+      <p>Entire state is in <code>data.sqlite</code>. To back up: stop the server, copy the file somewhere safe, restart. To restore: replace the file, restart.</p>
+      <div class="tip"><b>Extra safety:</b> use option 3 in <code>setup.bat</code> to also freeze the current database as the defaults in <code>seed_data.py</code>. Then even if <code>data.sqlite</code> is lost entirely, option 2 will restore your data.</div>
+
+      <h4 id="h11">11. Forgot the admin password?</h4>
+      <ol>
+        <li>Stop the server.</li>
+        <li>Open a Command Prompt in the folder.</li>
+        <li>Type <code>python</code> to enter a Python shell.</li>
+        <li>Run:
+          <pre>import sqlite3
+c = sqlite3.connect("data.sqlite")
+c.execute("UPDATE meta SET value=? WHERE key='password_b64'", ("YWRtaW4xMjM=",))
+c.commit(); c.close()</pre>
+        </li>
+        <li>Type <code>exit()</code>, then start the server again. Password is back to <code>admin123</code>.</li>
+      </ol>
+      <div class="tip"><b>Why "YWRtaW4xMjM="?</b> That's base64 of <code>admin123</code>. To encode a different password: <code>import base64; base64.b64encode(b"YourNewPassword").decode()</code>.</div>
+
+      <h4 id="h12">12. Editing the database directly</h4>
+      <p>You can open <code>data.sqlite</code> with any SQLite tool — <b>DB Browser for SQLite</b> is a good free one. Stop the server first, edit, save, then restart.</p>
+      <p>Tables: <code>meta</code>, <code>valves</code>, <code>classes</code>, <code>sizes</code>, <code>treatments</code>, <code>materials</code>, <code>part_headers</code>, <code>part_rows</code>, <code>years</code>, <code>project_types</code>. Each table with a <code>sort_order</code> column uses that column for display order.</p>
+
+      <h4 id="h13">13. Troubleshooting</h4>
+
+      <h5>Opening the HTML directly (no server) — dropdowns and tables are empty</h5>
+      <ul>
+        <li>Expected. The HTML contains no reference data of its own — everything comes from the SQLite database through the server. Without a running backend, the app shows the interface but nothing can be loaded.</li>
+        <li>You'll see a red banner at the top saying <i>"Server not reachable"</i> to make this clear.</li>
+        <li>To use the app, start <code>start.bat</code> on the server machine and open the URL (e.g. <code>http://part-generator.eng</code>) instead of double-clicking the HTML file.</li>
+      </ul>
+
+      <h5>I typed in a filter field and it snapped back</h5>
+      <ul>
+        <li>The filter fields only accept entries that you <b>clicked in the dropdown list</b> or <b>scrolled to with the mouse wheel</b>. What you type is just a filter — it does not become the value.</li>
+        <li>If you type something and leave the field without picking an entry, the field reverts to whatever was selected before (or stays empty if there was none).</li>
+        <li>If you want to empty the field, delete all text and click away, or press the <b>✕</b> button.</li>
+      </ul>
+
+      <h5>Material, Option, NACE and Norm. are greyed out</h5>
+      <ul>
+        <li>The selected Part Name is <code>Assembly</code>. Assembly parts have no material, no special treatment, and no NACE/Norm. designation — all four controls are disabled intentionally and their codes are omitted from the Part No.</li>
+        <li>Pick a different Part Name to re-enable all four. When they come back, their values are empty — you'll need to select a material and any options you want again.</li>
+      </ul>
+
+      <h5>The mouse wheel scrolls the page instead of cycling entries</h5>
+      <ul>
+        <li>The wheel cycles entries only when the dropdown is closed. If you've clicked into the field or started typing, the dropdown is open and the wheel scrolls the list instead — that's by design.</li>
+        <li>Year, Project Type, Valve Type, Part Name, Material, Class, and Size all support the wheel. Option and the Project Code / Item NO. text inputs do not.</li>
+      </ul>
+
+      <h5>The copy icon in one box reverts to a tick and gets stuck</h5>
+      <ul>
+        <li>This shouldn't happen in the current version — rapid repeated clicks are handled. If you ever see it, reload the page. The checkmark always reverts to the copy glyph after 1.2 seconds.</li>
+      </ul>
+
+      <h5>Year or Project Type dropdown is empty</h5>
+      <ul>
+        <li>The <code>years</code> or <code>project_types</code> table is empty. Run <code>setup.bat</code> → option 2 to rebuild with default values, or unlock Admin Mode and add rows manually.</li>
+      </ul>
+
+      <h5>setup.bat says "This setup must run as Administrator"</h5>
+      <ul>
+        <li>Right-click <code>setup.bat</code> and choose <b>Run as administrator</b>.</li>
+      </ul>
+
+      <h5>Database is corrupted or missing tables</h5>
+      <ul>
+        <li>Run <code>setup.bat</code> → option 2 (Repair / Reset database). This rebuilds <code>data.sqlite</code> from <code>seed_data.py</code>. Back up the existing file first if you want to attempt recovery.</li>
+      </ul>
+
+      <h5>"Cannot reach the server" in the app</h5>
+      <ul>
+        <li>The console window running the server has been closed. Reopen it with <code>start.bat</code>.</li>
+        <li>The computer went to sleep. Wake it and refresh.</li>
+      </ul>
+
+      <h5>Other computers can't connect (LAN mode)</h5>
+      <ul>
+        <li>Check the firewall rule: <code>netsh advfirewall firewall show rule name="Part No. Generator"</code>. If missing, re-run <code>setup.bat</code> → option 1 and enable LAN mode.</li>
+      </ul>
+
+      <h5>start.bat says "Configuration file is missing"</h5>
+      <ul>
+        <li><code>config.txt</code> hasn't been created yet. Run <code>setup.bat</code> → option 1 first.</li>
+      </ul>
+
+      <h5>"Python was not found on this computer"</h5>
+      <ul>
+        <li>Install Python 3 from <code>https://www.python.org/downloads/</code> and tick <b>Add Python to PATH</b>.</li>
+      </ul>
+
+      <h5>Port 1030 is already in use</h5>
+      <ul>
+        <li>Another instance of the server is still running. Close all black console windows and try again.</li>
+        <li>Or edit <code>config.txt</code> and change <code>PORT=1030</code>, then re-run <code>setup.bat</code> option 1 to rebuild the port-forward rule.</li>
+      </ul>
+
+      <h4 id="h14">14. Keyboard and mouse shortcuts</h4>
+      <ul>
+        <li><kbd>↑</kbd> <kbd>↓</kbd> — move through the filter list when a filter field is open.</li>
+        <li><kbd>Enter</kbd> — pick the highlighted entry, or confirm in password dialogs.</li>
+        <li><kbd>Esc</kbd> — abandon typing in a filter field and restore the previous entry, or close any open dialog.</li>
+        <li><b>Mouse wheel</b> — hover over a closed filter field and roll to cycle through entries. The selection commits immediately.</li>
+      </ul>
+
+      <h5>About the version</h5>
+      <p>This is <b>v1.0.0</b>, shown in the bottom-right of the window and in this Help. When a new version is installed, the number here will change so you can tell whether your browser has picked up the update (do a hard refresh with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> if in doubt).</p>
+
+    </div>
+    <div class="help-foot">
+      <span class="hint">PSM Engineering Department · v1.0.0</span>
+      <button id="helpClose" class="action primary" type="button">Got it</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- Version ---------- */
+const APP_VERSION = "1.0.0";
+
+/* ---------- Parts that skip material / option / NACE / Norm. ---------- */
+const NO_MATERIAL_PARTS = new Set(["Assembly"]);
+
+let DB = emptyDB();
+let editing = false;
+let dirty = false;
+let activeTable = "parts";
+let unlocked = false;
+let adminPassword = "";
+let sessionToken = "";
+let serverOnline = false;
+
+function emptyDB(){
+  return {
+    valves: [], classes: [], sizes: [], treatments: [],
+    materials: [], partHeaders: [], partRows: [],
+    years: [], projectTypes: []
+  };
+}
+
+const schemas = {
+  parts: {label:"Part List", headers:()=>DB.partHeaders, kind:"matrix"},
+  valves: {label:"Valve Types", headers:()=>["Valve Type","Catalogue Code","Code"], kind:"objects", keys:["name","catalogue","code"]},
+  materials: {label:"Material", headers:()=>["Material Group","Designation","Spec / Grade","Code","Form"], kind:"objects", keys:["group","designation","spec","code","form"]},
+  classes: {label:"Class", headers:()=>["Class","Code"], kind:"objects", keys:["name","code"]},
+  sizes: {label:"Size", headers:()=>["Size","Code"], kind:"objects", keys:["name","code"]},
+  treatments: {label:"Special Treatment", headers:()=>["Special Treatment","Code"], kind:"objects", keys:["name","code"]}
+};
+const tableOrder=["parts","valves","materials","classes","sizes","treatments"];
+
+function deepClone(x){return JSON.parse(JSON.stringify(x));}
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+/* ---------- Output boxes + clipboard ---------- */
+function setOutputText(id, text){
+  const el = $(id);
+  const txtSpan = el.querySelector(".txt");
+  if (txtSpan) txtSpan.textContent = text;
+  else el.textContent = text;
+  el.classList.toggle("has-value", text && text !== "—");
+}
+
+async function copyToClipboard(text, iconBtn){
+  if (!text || text === "—") return;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.top = "-1000px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    if (iconBtn){
+      if (!iconBtn.dataset.original) {
+        iconBtn.dataset.original = iconBtn.innerHTML;
+      }
+      if (iconBtn._copyTimer) clearTimeout(iconBtn._copyTimer);
+      iconBtn.classList.add("copied");
+      iconBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      iconBtn._copyTimer = setTimeout(() => {
+        iconBtn.classList.remove("copied");
+        iconBtn.innerHTML = iconBtn.dataset.original;
+        iconBtn._copyTimer = null;
+      }, 1200);
+    }
+  } catch (e) {
+    console.warn("Clipboard copy failed:", e);
+  }
+}
+
+function wireCopyBox(valueId, iconId){
+  const box = $(valueId);
+  const icon = $(iconId);
+  box.addEventListener("click", () => {
+    if (icon.disabled) return;
+    const txt = box.querySelector(".txt").textContent.trim();
+    if (!txt || txt === "—") return;
+    copyToClipboard(txt, icon);
+  });
+  icon.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (icon.disabled) return;
+    const txt = box.querySelector(".txt").textContent.trim();
+    if (!txt || txt === "—") return;
+    copyToClipboard(txt, icon);
+  });
+}
+
+/* ---------- API ---------- */
+async function apiGetDb() {
+  const r = await fetch('/api/db', {
+    cache: 'no-store',
+    headers: { 'X-Session-Token': sessionToken }
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const j = await r.json();
+  return j.db;
+}
+async function apiVerify(password) {
+  const r = await fetch('/api/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
+  });
+  if (!r.ok) return { ok: false };
+  return await r.json();
+}
+async function apiSaveDb(db) {
+  const r = await fetch('/api/db', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Session-Token': sessionToken
+    },
+    body: JSON.stringify({ db })
+  });
+  return await r.json();
+}
+async function apiChangePassword(oldPassword, newPassword) {
+  const r = await fetch('/api/password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Session-Token': sessionToken
+    },
+    body: JSON.stringify({ oldPassword, newPassword })
+  });
+  return await r.json();
+}
+
+function updateAdminUI(){
+  const badge = $("modeBadge");
+  if(unlocked){
+    badge.textContent = "Admin Mode";
+    badge.className = "mode-badge admin";
+  } else {
+    badge.textContent = "User Mode";
+    badge.className = "mode-badge user";
+  }
+  $("lockBtn").hidden = !unlocked;
+  $("changePwBtn").hidden = !unlocked;
+}
+
+function requestPassword(onSuccess){
+  const ov=$("pwOverlay"), inp=$("pwInput"), err=$("pwError"), okBtn=$("pwOk");
+  err.hidden=true; inp.value=""; ov.hidden=false;
+  setTimeout(()=>inp.focus(),0);
+  const cleanup=()=>{
+    ov.hidden=true;
+    $("pwOk").onclick=null; $("pwCancel").onclick=null; inp.onkeydown=null;
+  };
+  const tryUnlock=async ()=>{
+    okBtn.disabled = true;
+    try {
+      const result = await apiVerify(inp.value);
+      if (result.ok) {
+        unlocked = true;
+        adminPassword = inp.value;
+        sessionToken = result.token;
+        updateAdminUI();
+        cleanup();
+        onSuccess();
+      } else {
+        err.hidden = false;
+        inp.select();
+      }
+    } catch (e) {
+      err.textContent = "Cannot reach server. Try again.";
+      err.hidden = false;
+    } finally {
+      okBtn.disabled = false;
+    }
+  };
+  $("pwOk").onclick = tryUnlock;
+  $("pwCancel").onclick = cleanup;
+  inp.onkeydown = (e)=>{
+    if(e.key==="Enter"){ e.preventDefault(); tryUnlock(); }
+    if(e.key==="Escape"){ e.preventDefault(); cleanup(); }
+  };
+}
+
+function openChangePw(){
+  const ov=$("cpOverlay"), cur=$("cpCurrent"), nw=$("cpNew"), cf=$("cpConfirm"), msg=$("cpMsg"), okBtn=$("cpOk");
+  cur.value=""; nw.value=""; cf.value="";
+  msg.hidden=true; msg.className="pw-msg";
+  ov.hidden=false;
+  setTimeout(()=>cur.focus(),0);
+  const cleanup=()=>{
+    ov.hidden=true;
+    $("cpOk").onclick=null; $("cpCancel").onclick=null;
+    cur.onkeydown=null; nw.onkeydown=null; cf.onkeydown=null;
+  };
+  const showMsg=(text, isError)=>{
+    msg.textContent=text;
+    msg.className="pw-msg "+(isError?"error":"ok");
+    msg.hidden=false;
+  };
+  const trySave=async ()=>{
+    if(nw.value.length<4){ showMsg("New password must be at least 4 characters.", true); nw.focus(); return; }
+    if(nw.value!==cf.value){ showMsg("New password and confirmation do not match.", true); cf.select(); return; }
+    okBtn.disabled = true;
+    try {
+      const result = await apiChangePassword(cur.value, nw.value);
+      if (result.ok) {
+        adminPassword = nw.value;
+        showMsg("Password updated on server.", false);
+        setTimeout(cleanup, 900);
+      } else {
+        showMsg(result.error || "Failed to update password.", true);
+      }
+    } catch (e) {
+      showMsg("Cannot reach server. Try again.", true);
+    } finally {
+      okBtn.disabled = false;
+    }
+  };
+  const onKey=(e)=>{
+    if(e.key==="Enter"){ e.preventDefault(); trySave(); }
+    if(e.key==="Escape"){ e.preventDefault(); cleanup(); }
+  };
+  $("cpOk").onclick = trySave;
+  $("cpCancel").onclick = cleanup;
+  cur.onkeydown = onKey; nw.onkeydown = onKey; cf.onkeydown = onKey;
+}
+
+function openHelp(){ $("helpOverlay").hidden=false; }
+function closeHelp(){ $("helpOverlay").hidden=true; }
+$("helpBtn").addEventListener("click", openHelp);
+$("helpClose").addEventListener("click", closeHelp);
+$("helpCloseX").addEventListener("click", closeHelp);
+$("helpOverlay").addEventListener("click",(e)=>{ if(e.target===$("helpOverlay")) closeHelp(); });
+document.addEventListener("keydown",(e)=>{
+  if(e.key==="Escape" && !$("helpOverlay").hidden) closeHelp();
+});
+document.querySelectorAll(".help-nav a").forEach(a=>a.addEventListener("click",(e)=>{
+  e.preventDefault();
+  const id = a.getAttribute("href").slice(1);
+  const target = document.getElementById(id);
+  if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+}));
+
+/* ---------- Filter combobox ---------- */
+function makeCombobox(wrapId, onChange){
+  const wrap = $(wrapId);
+  const input = wrap.querySelector("input");
+  const listEl = wrap.querySelector(".list");
+  const clearBtn = wrap.querySelector(".btn-clear");
+
+  let items = [];
+  let hi = -1;
+  let isOpen = false;
+  let selectedValue = "";
+  let allValues = [];
+  let disabled = false;
+
+  function openList(){ if (disabled) return; isOpen = true; listEl.classList.add("open"); }
+  function closeList(){ isOpen = false; listEl.classList.remove("open"); hi = -1; }
+
+  function renderSelected(){
+    if (selectedValue){
+      input.value = selectedValue;
+      wrap.classList.add("has-value");
+    } else {
+      input.value = "";
+      wrap.classList.remove("has-value");
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function highlight(text, q){
+    if (!q) return escapeHtml(text);
+    const i = text.toLowerCase().indexOf(q.toLowerCase());
+    if (i < 0) return escapeHtml(text);
+    return escapeHtml(text.slice(0, i))
+         + "<mark>" + escapeHtml(text.slice(i, i + q.length)) + "</mark>"
+         + escapeHtml(text.slice(i + q.length));
+  }
+  function renderList(){
+    listEl.innerHTML = "";
+    if (items.length === 0){
+      const d = document.createElement("div");
+      d.className = "empty";
+      d.textContent = "No matches";
+      listEl.appendChild(d);
+      return;
+    }
+    items.forEach((txt, i) => {
+      const d = document.createElement("div");
+      d.className = "opt" + (i === hi ? " hi" : "");
+      d.innerHTML = highlight(txt, input.value.trim());
+      d.onmousedown = (e) => { e.preventDefault(); pick(i); };
+      listEl.appendChild(d);
+    });
+  }
+  function filter(){
+    if (disabled) return;
+    const q = input.value.trim().toLowerCase();
+    if (!q){
+      items = allValues.slice(0, 200);
+    } else {
+      items = allValues.filter(m => m.toLowerCase().includes(q)).slice(0, 200);
+    }
+    hi = items.length ? 0 : -1;
+    renderList();
+    openList();
+  }
+  function pick(i){
+    if (disabled) return;
+    if (i < 0 || i >= items.length) return;
+    selectedValue = items[i];
+    renderSelected();
+    closeList();
+    if (onChange) onChange();
+  }
+
+  function commitOnBlur(){
+    if (disabled) return;
+    const text = input.value.trim();
+
+    if (text === ""){
+      if (selectedValue !== ""){ selectedValue = ""; }
+      renderSelected();
+      if (onChange) onChange();
+      return;
+    }
+
+    renderSelected();
+    if (onChange) onChange();
+  }
+
+  input.addEventListener("focus", () => { if (!disabled) filter(); });
+  input.addEventListener("input", () => { if (!disabled) filter(); });
+  input.addEventListener("keydown", (e) => {
+    if (disabled) return;
+    if (!isOpen && (e.key === "ArrowDown" || e.key === "ArrowUp")){
+      filter(); return;
+    }
+    if (e.key === "ArrowDown"){
+      e.preventDefault();
+      hi = Math.min(hi + 1, items.length - 1);
+      renderList();
+    } else if (e.key === "ArrowUp"){
+      e.preventDefault();
+      hi = Math.max(hi - 1, 0);
+      renderList();
+    } else if (e.key === "Enter"){
+      if (isOpen && hi >= 0){
+        e.preventDefault();
+        pick(hi);
+      }
+    } else if (e.key === "Escape"){
+      renderSelected();
+      closeList();
+      input.blur();
+    }
+  });
+  input.addEventListener("blur", () => {
+    setTimeout(() => {
+      closeList();
+      commitOnBlur();
+    }, 120);
+  });
+
+  /* Mouse wheel — cycle through entries and COMMIT the selection */
+  input.addEventListener("wheel", (e) => {
+    if (disabled) return;
+    if (isOpen) return;
+    if (!allValues.length) return;
+    e.preventDefault();
+
+    let idx = allValues.indexOf(selectedValue);
+    if (idx < 0) idx = e.deltaY > 0 ? -1 : allValues.length;
+    idx += e.deltaY > 0 ? 1 : -1;
+    if (idx < 0) idx = allValues.length - 1;
+    if (idx >= allValues.length) idx = 0;
+
+    selectedValue = allValues[idx];
+    renderSelected();
+    if (onChange) onChange();
+  }, { passive: false });
+
+  clearBtn.addEventListener("mousedown", (e) => {
+    if (disabled) return;
+    e.preventDefault();
+    selectedValue = "";
+    renderSelected();
+    closeList();
+    input.focus();
+    filter();
+    if (onChange) onChange();
+  });
+
+  function setSource(values){
+    allValues = values.slice();
+  }
+  function setValue(v){
+    if (v && allValues.includes(v)){
+      selectedValue = v;
+    } else {
+      selectedValue = "";
+    }
+    renderSelected();
+  }
+  function getValue(){ return selectedValue; }
+  function setDisabled(flag){
+    disabled = !!flag;
+    if (disabled){
+      wrap.classList.add("disabled");
+      input.disabled = true;
+      input.placeholder = "";
+      selectedValue = "";
+      renderSelected();
+      closeList();
+    } else {
+      wrap.classList.remove("disabled");
+      input.disabled = false;
+      input.placeholder = "Type or scroll…";
+    }
+  }
+
+  return { setSource, setValue, getValue, setDisabled };
+}
+
+const yearCB  = makeCombobox("year_cb",  () => { updateGenerator(); });
+const ptypeCB = makeCombobox("ptype_cb", () => { updateGenerator(); });
+const valveCB = makeCombobox("valve_cb", () => { updateParts(""); updateMaterialAvailability(); updateGenerator(); });
+const partCB  = makeCombobox("part_cb",  () => { updateMaterialAvailability(); updateGenerator(); });
+const matCB   = makeCombobox("material_cb", () => { updateGenerator(); });
+const clsCB   = makeCombobox("cls_cb", () => { updateGenerator(); });
+const sizeCB  = makeCombobox("size_cb", () => { updateGenerator(); });
+
+/* ---------- Option dropdown: wheel support ---------- */
+(function wireOptionWheel(){
+  const sel = $("option");
+  sel.addEventListener("wheel", (e) => {
+    if (sel.disabled) return;
+    e.preventDefault();
+    const n = sel.options.length;
+    if (n < 2) return;
+    let idx = sel.selectedIndex;
+    if (idx < 0) idx = 0;
+    idx += e.deltaY > 0 ? 1 : -1;
+    if (idx < 0) idx = 0;
+    if (idx >= n) idx = n - 1;
+    sel.selectedIndex = idx;
+    sel.dispatchEvent(new Event("change"));
+  }, { passive: false });
+})();
+
+/* ---------- Lock Material / Option / NACE / Norm. when part is assembly ---------- */
+function updateMaterialAvailability(){
+  const noMat = NO_MATERIAL_PARTS.has(partCB.getValue());
+
+  matCB.setDisabled(noMat);
+  $("materialLabel").textContent = noMat ? "Material (not applicable)" : "Material";
+
+  const optSel = $("option");
+  optSel.disabled = noMat;
+  if (noMat) optSel.value = "";
+  $("optionLabel").textContent = noMat ? "Option (not applicable)" : "Option";
+
+  $("naceLbl").classList.toggle("disabled", noMat);
+  $("normLbl").classList.toggle("disabled", noMat);
+  $("nace").disabled = noMat;
+  $("norm").disabled = noMat;
+  if (noMat){
+    if ($("nace").checked || $("norm").checked){
+      $("nace").checked = false;
+      $("norm").checked = false;
+    }
+  }
+}
+
+/* ---------- Reference Table helpers ---------- */
+function getRows(key){return key==="parts" ? DB.partRows : DB[key];}
+function setCell(key,r,c,value){
+  const schema=schemas[key];
+  if(schema.kind==="matrix") DB.partRows[r][c]=value;
+  else DB[key][schema.keys[c]]=value;
+}
+function addBlankRow(key){
+  const schema=schemas[key];
+  if(schema.kind==="matrix"){
+    const row=new Array(DB.partHeaders.length).fill("");
+    const ni=DB.partHeaders.length-1;
+    const nums=DB.partRows.map(r=>parseInt(r[ni],10)).filter(Number.isFinite);
+    row[ni]=String(nums.length?Math.max(...nums)+1:0).padStart(2,"0");
+    DB.partRows.push(row);
+  } else {
+    const o={};schema.keys.forEach(k=>o[k]="");DB[key].push(o);
+  }
+}
+function selectedRows(){return [...document.querySelectorAll(".row-select:checked")].map(x=>+x.dataset.row).sort((a,b)=>a-b);}
+
+function updateButtons(){
+  const sel=selectedRows(), rows=getRows(activeTable);
+  $("addBtn").disabled=!editing;
+  $("deleteBtn").disabled=!editing || !sel.length;
+  $("upBtn").disabled=!editing || sel.length!==1 || sel[0]===0;
+  $("downBtn").disabled=!editing || sel.length!==1 || sel[0]===rows.length-1;
+  $("saveBtn").disabled=!editing;
+  $("editBtn").textContent=editing?"Cancel":"Edit";
+}
+function updateEditorStatus(custom){
+  if (custom) { $("editorStatus").textContent = custom; $("editorStatus").style.color = ""; return; }
+  $("editorStatus").textContent = (
+    editing ? (dirty ? "Unsaved changes. Click Save to write them to the server." : "Editing "+schemas[activeTable].label+". Select one row to move it.")
+            : (unlocked ? "Unlocked. Click Edit to modify the selected table." : "Read-only. Admin password required to edit.")
+  );
+  $("editorStatus").style.color = "";
+}
+function renderTabs(){
+  const wrap=$("tableTabs");wrap.innerHTML="";
+  tableOrder.forEach(k=>{
+    const b=document.createElement("button");
+    b.className="table-tab"+(k===activeTable?" active":"");
+    b.textContent=schemas[k].label;
+    b.onclick=()=>{activeTable=k;renderTabs();renderTable();};
+    wrap.appendChild(b);
+  });
+}
+function renderTable(){
+  const schema=schemas[activeTable], rows=getRows(activeTable), headers=schema.headers();
+  let out='<div class="table-wrap"><table class="data-table '+activeTable+(editing?' editing':'')+'"><thead><tr><th>Select</th>';
+  out+=headers.map(h=>`<th>${esc(h)}</th>`).join("");
+  out+="</tr></thead><tbody>";
+  rows.forEach((row,ri)=>{
+    out+="<tr><td><input class='row-select' type='checkbox' data-row='"+ri+"' "+(editing?"":"disabled")+"></td>";
+    for(let ci=0;ci<headers.length;ci++){
+      const value=schema.kind==="matrix" ? row[ci] : row[schema.keys[ci]];
+      out+=`<td class="editable" data-r="${ri}" data-c="${ci}" contenteditable="${editing}">${esc(value)}</td>`;
+    }
+    out+="</tr>";
+  });
+  out+="</tbody></table></div>";
+  $("tableContent").innerHTML=out;
+  $("rowCount").textContent=rows.length+" rows";
+
+  document.querySelectorAll("#tableContent td.editable").forEach(td=>td.addEventListener("input",()=>{
+    setCell(activeTable,+td.dataset.r,+td.dataset.c,td.textContent.trim());
+    dirty=true;updateButtons();refreshGeneratorSources();updateGenerator();
+  }));
+  document.querySelectorAll(".row-select").forEach(cb=>cb.addEventListener("change",updateButtons));
+  updateButtons();updateEditorStatus();
+}
+
+$("editBtn").addEventListener("click", async ()=>{
+  if(!unlocked){
+    requestPassword(()=>{ editing=true; renderTable(); updateEditorStatus(); });
+    return;
+  }
+  if(!editing){ editing=true; renderTable(); updateEditorStatus(); return; }
+  if(dirty && !confirm("Discard unsaved changes?"))return;
+  try {
+    const serverDb = await apiGetDb();
+    if (serverDb) DB = deepClone(serverDb);
+  } catch (e) { /* keep current */ }
+  dirty=false;editing=false;
+  renderTabs();renderTable();refreshGeneratorSources();updateGenerator();updateEditorStatus();
+});
+$("addBtn").addEventListener("click",()=>{
+  if(!editing)return;addBlankRow(activeTable);dirty=true;renderTable();refreshGeneratorSources();updateGenerator();updateEditorStatus("New row added.");
+});
+$("deleteBtn").addEventListener("click",()=>{
+  if(!editing)return;
+  const sel=selectedRows();if(!sel.length)return;
+  if(!confirm(`Delete ${sel.length} selected row(s) from ${schemas[activeTable].label}?`))return;
+  const rows=getRows(activeTable);[...sel].sort((a,b)=>b-a).forEach(i=>rows.splice(i,1));
+  dirty=true;renderTable();refreshGeneratorSources();updateGenerator();updateEditorStatus("Selected row(s) deleted.");
+});
+$("upBtn").addEventListener("click",()=>{
+  if(!editing)return;const sel=selectedRows(),rows=getRows(activeTable);
+  if(sel.length!==1||sel[0]===0)return;
+  const i=sel[0];[rows[i-1],rows[i]]=[rows[i],rows[i-1]];
+  dirty=true;renderTable();refreshGeneratorSources();updateGenerator();updateEditorStatus("Row moved up.");
+});
+$("downBtn").addEventListener("click",()=>{
+  if(!editing)return;const sel=selectedRows(),rows=getRows(activeTable);
+  if(sel.length!==1||sel[0]===rows.length-1)return;
+  const i=sel[0];[rows[i+1],rows[i]]=[rows[i],rows[i+1]];
+  dirty=true;renderTable();refreshGeneratorSources();updateGenerator();updateEditorStatus("Row moved down.");
+});
+$("saveBtn").addEventListener("click", async ()=>{
+  if(!unlocked){ requestPassword(()=>{}); return; }
+  $("saveBtn").disabled = true;
+  try {
+    const result = await apiSaveDb(DB);
+    if (result.ok) {
+      dirty=false;editing=false;
+      renderTabs();renderTable();refreshGeneratorSources();updateGenerator();
+      updateEditorStatus("Saved to SQLite. All users will see these changes on their next page load.");
+    } else {
+      alert("Save failed: " + (result.error || "unknown error"));
+    }
+  } catch (e) {
+    alert("Cannot reach server. Your changes were NOT saved.");
+  } finally {
+    updateButtons();
+  }
+});
+$("changePwBtn").addEventListener("click",()=>{
+  if(!unlocked){ requestPassword(()=>openChangePw()); return; }
+  openChangePw();
+});
+$("lockBtn").addEventListener("click", async ()=>{
+  if(dirty && !confirm("You have unsaved changes. Locking will discard them. Continue?"))return;
+  unlocked=false; editing=false; dirty=false;
+  adminPassword=""; sessionToken="";
+  try {
+    const serverDb = await apiGetDb();
+    if (serverDb) DB = deepClone(serverDb);
+  } catch (e) { /* keep current */ }
+  renderTabs(); renderTable(); refreshGeneratorSources(); updateGenerator(); updateAdminUI();
+  updateEditorStatus("Locked. Admin password required to edit.");
+});
+
+function setSelect(id,items,placeholder,textKey,valueKey){
+  const el=$(id);el.innerHTML="";
+  const p=document.createElement("option");p.value="";p.textContent=placeholder;el.appendChild(p);
+  items.forEach(x=>{
+    const o=document.createElement("option");
+    o.value=valueKey?x[valueKey]:x;
+    o.textContent=textKey?x[textKey]:x;
+    el.appendChild(o);
+  });
+}
+
+function refreshGeneratorSources(){
+  valveCB.setSource(DB.valves.map(v => v.name));
+  matCB.setSource(DB.materials.map(m => m.spec));
+  clsCB.setSource(DB.classes.map(c => c.name));
+  sizeCB.setSource(DB.sizes.map(s => s.name));
+  updateParts();
+}
+
+function updateParts(preferredName){
+  const valveName = valveCB.getValue();
+  const v = DB.valves.find(x => x.name === valveName);
+  const catalogue = v ? v.catalogue : "";
+  const idx = DB.partHeaders.indexOf(catalogue);
+
+  const parts = [];
+  if (idx >= 0){
+    for (const row of DB.partRows){
+      const val = row[idx];
+      if (val !== "" && !parts.includes(val)) parts.push(val);
+    }
+  }
+  partCB.setSource(parts);
+  if (preferredName !== undefined && preferredName !== "") partCB.setValue(preferredName);
+  else partCB.setValue(partCB.getValue());
+  updateMaterialAvailability();
+}
+
+function validProject(v){return /^\d{3,4}$/.test(v);}
+function validItem(v){return /^\d{1,4}$/.test(v);}
+
+function updateGenerator(){
+  const valveName = valveCB.getValue();
+  const valve = DB.valves.find(x => x.name === valveName);
+
+  const partName = partCB.getValue();
+  let partCode = "";
+  if (valve && partName){
+    const vi = DB.partHeaders.indexOf(valve.catalogue);
+    if (vi >= 0){
+      const row = DB.partRows.find(r => r[vi] === partName);
+      if (row) partCode = row[DB.partHeaders.length - 1] || "";
+    }
+  }
+
+  const materialDisabled = NO_MATERIAL_PARTS.has(partName);
+
+  const matSpec = matCB.getValue();
+  const mat = materialDisabled ? null : DB.materials.find(x => x.spec === matSpec);
+
+  const clsName = clsCB.getValue();
+  const cls = DB.classes.find(x => x.name === clsName);
+
+  const sizeName = sizeCB.getValue();
+  const size = DB.sizes.find(x => x.name === sizeName);
+
+  const optName = materialDisabled ? "" : $("option").value;
+  const opt = DB.treatments.find(x => x.name === optName);
+
+  const nace = !materialDisabled && $("nace").checked;
+  const norm = !materialDisabled && $("norm").checked;
+  const mcode = mat ? (mat.code + (nace ? "N" : "") + (norm ? "R" : "")) : "";
+
+  let partNoText = "—";
+  const coreReady = valve && partCode && cls && size;
+  const materialReady = materialDisabled || mat;
+  if (coreReady && materialReady){
+    const segments = [valve.code, partCode];
+    if (!materialDisabled) segments.push(mcode);
+    segments.push(cls.code);
+    segments.push(size.code + (opt ? opt.code : ""));
+    partNoText = segments.join("-");
+  }
+  setOutputText("partNo", partNoText);
+
+  const yearVal = yearCB.getValue();
+  const ptypeVal = ptypeCB.getValue();
+  const pc = $("projectCode").value;
+  const item = $("itemNo").value;
+  const drawingNoText = (valve && partCode && yearVal && ptypeVal && validProject(pc) && validItem(item))
+    ? `${yearVal}-${ptypeVal}-${pc}-${item}-${partCode}`
+    : "—";
+  setOutputText("drawingNo", drawingNoText);
+
+  $("copyPartNo").disabled = (partNoText === "—");
+  $("copyDrawingNo").disabled = (drawingNoText === "—");
+
+  const miss = [];
+  if (!valve) miss.push("Valve Type");
+  if (!partName) miss.push("Part Name");
+  if (!materialDisabled && !mat) miss.push("Material");
+  if (!cls) miss.push("Class");
+  if (!size) miss.push("Size");
+  if (!validProject(pc)) miss.push("Project Code (3–4 digits)");
+  if (!validItem(item)) miss.push("Item NO. (1–4 digits)");
+  $("status").textContent = miss.length ? "Waiting for: " + miss.join(", ") : "All required fields are valid.";
+  $("status").className = miss.length ? "status invalid" : "status";
+}
+
+function wireNumeric(id,max){
+  $(id).addEventListener("input",e=>{
+    e.target.value=e.target.value.replace(/\D/g,"").slice(0,max);
+    updateGenerator();
+  });
+}
+
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  document.querySelectorAll(".sheet").forEach(x=>x.classList.remove("active"));
+  $(b.dataset.tab).classList.add("active");
+}));
+
+wireNumeric("projectCode",4);
+wireNumeric("itemNo",4);
+
+["option","nace","norm"].forEach(id=>$(id).addEventListener("change",updateGenerator));
+$("projectCode").addEventListener("input",updateGenerator);
+$("itemNo").addEventListener("input",updateGenerator);
+
+wireCopyBox("partNo", "copyPartNo");
+wireCopyBox("drawingNo", "copyDrawingNo");
+
+(async function boot(){
+  $("appVersion").textContent = "v" + APP_VERSION;
+  const helpHint = document.querySelector(".help-foot .hint");
+  if (helpHint) helpHint.textContent = "PSM Engineering Department · v" + APP_VERSION;
+
+  try {
+    const serverDb = await apiGetDb();
+    if (serverDb) {
+      DB = deepClone(serverDb);
+      serverOnline = true;
+    } else {
+      DB = emptyDB();
+      serverOnline = false;
+    }
+  } catch (e) {
+    DB = emptyDB();
+    serverOnline = false;
+  }
+
+  yearCB.setSource(DB.years.map(String));
+  ptypeCB.setSource(DB.projectTypes.map(String));
+
+  setSelect("option", DB.treatments, "— None —", "name", "name");
+
+  refreshGeneratorSources();
+  renderTabs();
+  renderTable();
+  updateGenerator();
+  updateAdminUI();
+
+  if (!serverOnline) {
+    $("offlineBanner").style.display = "block";
+    $("editorStatus").textContent = "Server not reachable. Start start.bat and reload this page.";
+    $("editorStatus").style.color = "#a52a2a";
+    $("editBtn").disabled = true;
+  } else {
+    updateEditorStatus();
+  }
+})();
+</script>
+</body>
+</html>
